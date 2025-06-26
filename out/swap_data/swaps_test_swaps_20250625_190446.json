@@ -1,0 +1,10 @@
+{
+  "swaps": [
+    {
+      "from": "SOL",
+      "to": "USDC",
+      "amount": 100
+    }
+  ],
+  "total_swaps": 1
+}
