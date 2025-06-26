@@ -1,0 +1,57 @@
+# Ignore all files in bin directory
+/bin/
+bin/
+
+# Ignore environment variable files
+.env
+.env.*
+!.env.example
+
+# macOS system files
+.DS_Store
+
+# Python cache and virtual environment
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+*.pyd
+*.pdb
+*.egg-info/
+.eggs/
+*.egg
+*.env/
+.venv/
+venv/
+ENV/
+env/
+
+# VSCode settings
+.vscode/
+
+# Output/build directories
+/out/
+out/
+build/
+dist/
+
+# Logs
+*.log
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+
+# Node.js
+node_modules/
+
+# Coverage reports
+coverage/
+*.cover
+*.coverage
+*.lcov
+
+# Misc
+*.swp
+*.swo
+*~
