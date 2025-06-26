@@ -1,7 +1,5 @@
 import requests
-import json
 import logging
-import time
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import network_utils as net
@@ -49,28 +47,28 @@ def make_rpc_request(payload, max_retries=3):
 def get_pool_open_time_from_raydium_api(pool_address):
     """
     Get pool open time from Raydium API.
-    
+
     ⚠️  LIMITATION: Many Raydium pools have openTime = 0 or missing openTime field.
     This is especially common for:
     - Older pools (created before ~2023)
     - Manually created pools
     - Pools with non-standard configurations
-    
+
     If openTime is 0 or missing, you must provide manual epoch timestamp.
     """
     try:
         url = f"https://api-v3.raydium.io/pools/info/ids"
         params = {"ids": pool_address}
-        
+
         response = requests.get(url, params=params, timeout=30)
         response.raise_for_status()
-        
+
         data = response.json()
-        
+
         if 'data' in data and data['data']:
             pool_info = data['data'][0]
             open_time = pool_info.get('openTime')
-            
+
             if open_time and int(open_time) > 0:
                 open_timestamp = int(open_time)
                 readable_time = datetime.fromtimestamp(open_timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')
@@ -89,11 +87,11 @@ def get_pool_open_time_from_raydium_api(pool_address):
                 print(f"   This pool was likely created before Raydium added openTime tracking.")
                 print(f"   Please provide manual epoch timestamp from explorer.solana.com")
                 return None
-                
+
         logger.error("No pool data found in Raydium API response")
         print(f"❌ Pool {pool_address} not found in Raydium API")
         return None
-        
+
     except Exception as e:
         logger.error(f"Failed to get pool open time from API: {e}")
         print(f"❌ Failed to fetch pool data from Raydium API: {e}")
@@ -232,22 +230,22 @@ def scan_blocks_for_pool_creation(pool_address, center_slot, block_range=50):
 def find_pool_creation_transaction(pool_address, open_time_epoch=None):
     """
     Main function to find pool creation transaction.
-    
+
     ⚠️  LIMITATIONS:
     - Only works for pools with valid openTime data or manual timestamp
     - Many older Raydium pools have openTime = 0 or missing
     - Success rate is higher for newer pools (post-2023)
-    
+
     Args:
         pool_address: The Raydium pool address
         open_time_epoch: Optional epoch timestamp. If not provided, will fetch from Raydium API
-    
+
     Returns:
         dict: The pool creation transaction or None if not found
     """
     logger.info(f"=== FINDING POOL CREATION TRANSACTION ===")
     logger.info(f"Pool Address: {pool_address}")
-    
+
     # Step 1: Get open time
     if open_time_epoch:
         open_timestamp = int(open_time_epoch)
@@ -328,16 +326,16 @@ def find_pool_creation_transaction(pool_address, open_time_epoch=None):
 if __name__ == '__main__':
     # Example usage - NOTE: This pool is known to work (has valid openTime)
     test_pool = "58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2"  # SOL/USDC pool
-    
+
     print("⚠️  TESTING NOTE: This example uses a pool known to have valid openTime data.")
     print("   Many other pools may require manual timestamp input.\n")
-    
+
     # Option 1: Use Raydium API to get open time (works only for pools with valid openTime)
     result = find_pool_creation_transaction(test_pool)
-    
+
     # Option 2: Provide open time manually (required for pools with openTime = 0)
     # result = find_pool_creation_transaction(test_pool, open_time_epoch=1234567890)
-    
+
     if result:
         print("SUCCESS: Pool creation transaction found!")
         print(f"Explorer link: https://explorer.solana.com/tx/{result['transaction']['signatures'][0]}")

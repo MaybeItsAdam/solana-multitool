@@ -1,4 +1,4 @@
-module solana-multitool
+module github.com/MaybeItsAdam/solana-multitool
 
 go 1.23.2
 
