@@ -16,12 +16,13 @@ plan:
 
 ## Getting started
 
-copy the .env.example to .env with your own quicknode endpoint
-build getswaps.go and move it to the /bin folder
+in the root /config/ copy the .env.example to .env with your own rpc endpoint
+build getswaps.go and move it to the /bin/ folder
 use the python files to achieve desired outcome
 
 ## How to use the Tools
 
 todo:
-  - fill this out
-  - redirect binaries to the right folder
+  - implement thorough testing
+  - documentation properly
+  - stop defaults being defined in multiple places

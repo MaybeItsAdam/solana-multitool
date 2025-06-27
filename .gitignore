@@ -2,6 +2,9 @@
 /bin/
 bin/
 
+/logs/
+logs/
+
 # Ignore environment variable files
 .env
 .env.*
@@ -30,8 +33,8 @@ env/
 .vscode/
 
 # Output/build directories
-/out/
-out/
+/data/
+data/
 build/
 dist/
 
@@ -55,3 +58,6 @@ coverage/
 *.swp
 *.swo
 *~
+
+# Pyright config
+pyright*

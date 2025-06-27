@@ -1,35 +1,39 @@
 import os
-import logging
+from solana_multitool.auto_config.logging import logging_config
 from pathlib import Path
+import logging
 from typing import Optional
+from dotenv import load_dotenv, find_dotenv
 
-def load_env_file(env_file_path: Optional[str] = None) -> None:
+logger = logging_config.get_logger(__name__)
+
+def load_env_file() -> None:
     """
-    Load environment variables from .env file.
+        Load environment variables from a .env file using the python-dotenv library.
 
-    Args:
-        env_file_path: Path to .env file. If None, looks for .env in project root.
-    """
-    if env_file_path is None:
-        # Look for .env file in project root (two levels up from this file)
-        project_root = Path(__file__).parent.parent.parent
-        env_path = project_root / ".env"
-    else:
-        env_path = Path(env_file_path)
+        This function is robust and handles path resolution automatically, making it
+        suitable for use in various parts of a project.
 
-    if not env_path.exists():
-        # No .env file found, will use defaults
-        return
+        Args:
+            env_file_path: Optional path to the .env file. If None, it automatically
+                           searches for a '.env' file by traversing up the directory tree.
+
+        Returns:
+            True if a .env file was found and loaded, False otherwise.
+        """
+    project_root = Path(__file__).resolve().parents[3]
+    env_path = project_root / "config" / ".env"
+
+    if not env_path or not Path(env_path).exists():
+        print("No .env file found to load.")
 
     try:
-        with open(env_path, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
-                    os.environ[key.strip()] = value.strip()
+        was_loaded = load_dotenv(dotenv_path=env_path, override=True)
+        if not was_loaded:
+            print(f"Environment variables NOT LOADED from: {env_path}")
     except Exception as e:
-        print(f"Warning: Could not load .env file: {e}")
+        print(f"Could not load .env file from {env_path}: {e}")
+
 
 class Config:
     def __init__(self) -> None:
@@ -102,15 +106,12 @@ class Config:
         if 'api.mainnet-beta.solana.com' in self.solana_rpc_url:
             print("⚠️  Warning: Using public Solana RPC. Consider using a dedicated RPC provider for better performance.")
 
-    def get_rpc_url(self, use_fallback: bool = True) -> str:
-        """
-        Get RPC URL with optional fallback.
+    def get_rpc_url(self, use_fallback: bool = False) -> str:
+        if use_fallback:
+            if self.fallback_rpc_url is not None:
+                return self.fallback_rpc_url
+            raise ValueError("A fallback RPC URL was requested, but none is configured.")
 
-        Args:
-            use_fallback: Whether to use fallback URL if available
-        """
-        if use_fallback and self.fallback_rpc_url is not None:
-            return self.fallback_rpc_url
         return self.solana_rpc_url
 
     def is_quicknode(self) -> bool:

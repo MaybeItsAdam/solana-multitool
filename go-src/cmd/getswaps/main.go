@@ -14,17 +14,17 @@ import (
 )
 
 func main() {
-	// Load .env from project root (two directories up from this file)
-	_ = godotenv.Load("../../.env")
+	// Load .env from config directory at project root (two directories up from this file)
+	_ = godotenv.Load("../config/.env")
 
 	// Get QuickNode URL from environment variable
-	quickNodeURL := os.Getenv("QUICKNODE_URL")
-	if quickNodeURL == "" {
+	solanaRPCURL := os.Getenv("SOLANA_RPC_URL")
+	if solanaRPCURL == "" {
 		log.Fatal("QUICKNODE_URL not set in environment or .env file")
 	}
 
 	// Set up RPC client with QuickNode endpoint
-	rpcClient := rpc.New(quickNodeURL)
+	rpcClient := rpc.New(solanaRPCURL)
 
 	sig := os.Args[1]
 
@@ -59,17 +59,18 @@ func main() {
 		log.Fatalf("Error parsing transaction: %s", err)
 	}
 
-	// Print the parsed transaction data
-	marshalledData, _ := json.MarshalIndent(transactionData, "", "  ")
-	fmt.Println(string(marshalledData))
-
 	// Process and extract swap-specific data from the parsed transaction
 	swapData, err := parser.ProcessSwapData(transactionData)
 	if err != nil {
 		log.Fatalf("Error processing swap data: %s", err)
 	}
 
-	// Print the parsed swap data
-	marshalledSwapData, _ := json.MarshalIndent(swapData, "", "  ")
-	fmt.Println(string(marshalledSwapData))
+	// Combine both outputs into a single JSON object
+	combined := map[string]any{
+		"swap_data":        swapData,
+		"transaction_data": transactionData,
+	}
+
+	marshalledCombined, _ := json.MarshalIndent(combined, "", "  ")
+	fmt.Println(string(marshalledCombined))
 }

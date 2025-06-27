@@ -1,16 +1,67 @@
-"""Orchestrates fetching, extracting, and formatting Solana swaps.
+"""
+swap_coindesk.py
 
-This module is intended to be run as a script or imported as a library.
+Combines formatting utilities and orchestration logic for Solana swap and transaction data,
+including Coindesk formatting and batch extraction.
+
+This module provides:
+- Functions to format swaps found within transactions for Coindesk ingestion.
+- Orchestration to fetch, extract, and format swaps for a given instrument and block interval.
+
 Relative imports are used for compatibility with Python package structure.
 """
 
-import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from solana_multitool.auto_config.environment import get_provider_key
+from solana_multitool.utils.solana_rpc import get_solana_transactions_with_program_id
+from solana_multitool.swaps.swap_extractor import get_swap_from_tx_signature
+from solana_multitool.utils.output_manager import output_manager
 
-from .solana_rpc_utils import get_solana_transactions_with_program_id
-from .swap_extractor import get_solana_swap_from_transaction_signature
-from .swap_formatter import format_goswap_and_tx_to_coindesk
-from ..output_manager import output_manager
+def address_to_TLA(address: str) -> str:
+    """
+    Placeholder for address-to-TLA (Three Letter Acronym) mapping.
+    """
+    return address
+
+def format_goswap_and_tx_to_coindesk(swap: dict, tx: dict) -> dict:
+    """
+    Formats swap and transaction data into the structure expected by Coindesk.
+
+    Args:
+        swap (dict): The swap data extracted from the transaction.
+        tx (dict): The original transaction data.
+
+    Returns:
+        dict: A dictionary formatted for Coindesk ingestion.
+    """
+    formatted = {
+        "TYPE": None,
+        "MARKET": None,
+        "CHAIN_ASSET": None,
+        "INSTRUMENT": swap["transaction_data"][1]["Data"]["info"]["authority"],
+        "MAPPED_INSTRUMENT": swap["transaction_data"][1]["Data"]["info"]["authority"],
+        "BASE": address_to_TLA(swap["swap_data"]["TokenInMint"]),
+        "QUOTE": address_to_TLA(swap["swap_data"]["TokenOutMint"]),
+        "SIDE": None,  # BUY OR SELL
+        "ID": None,
+        "TIMESTAMP": None,
+        "TIMESTAMP_NS": None,
+        "RECEIVED_TIMESTAMP": None,
+        "RECEIVED_TIMESTAMP_NS": None,
+        "QUANTITY": None,
+        "PRICE": None,
+        "QUOTE_QUANTITY": None,
+        "SOURCE": None,
+        "CCSEQ": None,
+        "TRANSACTION_HASH": None,
+        "BLOCK_NUMBER": None,
+        "FROM": swap["transaction_data"][0]["Data"]["info"]["authority"],
+        "MARKET_FEE_PERCENTAGE": None,
+        "MARKET_FEE_VALUE": str(tx["meta"]["fee"]),
+        "PROVIDER_KEY": get_provider_key(),
+        "SIGNATURE_TEMP": tx['transaction']['signatures'][0]
+    }
+    return formatted
 
 def get_coindesk_formatted_swaps_in_interval_given_instrument(instrument: str, start_block: int, end_block: int):
     """
@@ -36,7 +87,7 @@ def get_coindesk_formatted_swaps_in_interval_given_instrument(instrument: str, s
                     "status": "no inner instructions"
                 }
             else:
-                future = executor.submit(get_solana_swap_from_transaction_signature, signature, tx)
+                future = executor.submit(get_swap_from_tx_signature, signature) # THIS WONT SAVE
                 futures_map[future] = (idx, tx)
 
         for future in as_completed(futures_map):
@@ -64,7 +115,7 @@ if __name__ == '__main__':
     end_block = 324554980
 
     swaps = get_coindesk_formatted_swaps_in_interval_given_instrument(instrument, start_block, end_block)
-    
+
     # Save swap data to centralized output
     if swaps:
         output_file = output_manager.save_swap_data(swaps, "interval_swaps")
