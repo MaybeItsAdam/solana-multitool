@@ -19,13 +19,11 @@ Usage:
         print("No pool initialization found in the given range.")
 """
 
-from solana_multitool.auto_config.logging import logging_config
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from solana_multitool.utils.solana_rpc import make_rpc_request
 from solana_multitool.auto_config.environment import get_solana_rpc_url
 from solana_multitool.utils.output_manager import save_working_transaction_json
-
-logger = logging_config.get_logger(__name__)
+from solana_multitool.auto_config.logging_config import logger
 
 def scan_dex_for_pool_initialization_log(
     dex_program_id,
@@ -55,7 +53,7 @@ def scan_dex_for_pool_initialization_log(
     processed_slots = 0
     failed_slots = 0
 
-    logger = logging_config.get_logger(__name__)
+    # logger is already imported from logging_config.py
 
     if logger:
         logger.info(f"Starting scan for DEX program {dex_program_id}")

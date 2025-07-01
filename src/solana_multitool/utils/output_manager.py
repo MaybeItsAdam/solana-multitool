@@ -110,8 +110,7 @@ class OutputManager:
         Returns:
             String path to saved file
         """
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"pool_creation_scan_{pool_address}_{timestamp}.json"
+        filename = f"pool_creation_scan_{pool_address}.json"
 
         return self.save_json(result_data, "pool_scans", filename)
 
@@ -126,12 +125,11 @@ class OutputManager:
         Returns:
             String path to saved file
         """
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         if identifier:
-            filename = f"swaps_{identifier}_{timestamp}.json"
+            filename = f"swaps_{identifier}.json"
         else:
-            filename = f"swaps_{timestamp}.json"
+            filename = f"swaps.json"
 
         return self.save_json(swap_data, "swap_data", filename)
 

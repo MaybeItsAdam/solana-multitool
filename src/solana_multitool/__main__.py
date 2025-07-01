@@ -1,11 +1,11 @@
 from solana_multitool.pools.tx_log_scanner import scan_dex_for_pool_initialization_log
 from solana_multitool.constants import *
-from solana_multitool.auto_config.logging import logging_config
+from solana_multitool.auto_config.logging_config import logger
 from solana_multitool.swaps.swap_extractor import get_swap_from_tx_signature
-from solana_multitool.utils.solana_rpc import get_solana_transactions_with_program_id
+from solana_multitool.utils.solana_rpc import get_solana_transactions_with_program_id_in_interval
 from solana_multitool.utils.output_manager import save_swap
 
-logger = logging_config.get_logger(__name__)
+# TODO: make this a cli interactive space
 
 def find_pool_creation_demo():
     """Main function to scan for Raydium CLMM pool initialization logs."""
@@ -36,7 +36,7 @@ def parse_swaps_by_id_demo(program_id, start_slot, end_slot):
     tx_count = 0
     swap_count = 0
 
-    for tx in get_solana_transactions_with_program_id(program_id, start_slot, end_slot):
+    for tx in get_solana_transactions_with_program_id_in_interval(program_id, start_slot, end_slot):
         tx_count += 1
         signature = tx["transaction"]["signatures"][0]
         swap_data = get_swap_from_tx_signature(signature, log_error=False)

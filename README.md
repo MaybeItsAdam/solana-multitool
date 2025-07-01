@@ -14,6 +14,10 @@ plan:
   - scan from beginning of sol history and recognise when new pool is created
   - index swaps with the pool
 
+cannot be made into a package yet bc
+  - requires go binary there - should make it call a different package, or bundle binaries using importlib
+  - user config - need to figure out how that works - use pydantic_settings
+
 ## Getting started
 
 in the root /config/ copy the .env.example to .env with your own rpc endpoint

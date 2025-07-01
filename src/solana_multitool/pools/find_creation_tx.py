@@ -29,10 +29,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from solana_multitool.utils import rate_limiter as net
 from solana_multitool.utils.output_manager import output_manager
 from solana_multitool.auto_config.environment import get_solana_rpc_url, get_max_requests_per_second
-from solana_multitool.auto_config.logging import logger
+from solana_multitool.auto_config.logging_config import logger
 
 SOLANA_RPC_URL = get_solana_rpc_url()
 rate_limiter = net.RateLimiter(max_requests=get_max_requests_per_second(), time_window=1.0)
+# logger is now imported directly from logging_config
 
 def get_pool_open_time_from_raydium_api(pool_address):
     try:
@@ -44,7 +45,7 @@ def get_pool_open_time_from_raydium_api(pool_address):
         if 'data' in data and data['data']:
             pool_info = data['data'][0]
             open_time = pool_info.get('openTime')
-            print("open_time:", open_time)
+            logger.info(f"open_time: {open_time}")
             if open_time and int(open_time) > 0:
                 return int(open_time)
         return None
@@ -172,7 +173,7 @@ def find_pool_creation_transaction(pool_address, open_time_epoch=None):
 
 def main():
     if len(sys.argv) < 2:
-        print(__doc__)
+        logger.info(__doc__)
         return
     pool_address = sys.argv[1]
     open_time_epoch = None
@@ -182,27 +183,27 @@ def main():
         except ValueError:
             print("Error: open_time_epoch must be a valid integer (Unix timestamp)")
             return
-    print(f"Searching for pool creation transaction...")
-    print(f"Pool: {pool_address}")
+    logger.info(f"Searching for pool creation transaction...")
+    logger.info(f"Pool: {pool_address}")
     if open_time_epoch:
         readable_time = datetime.fromtimestamp(open_time_epoch).strftime('%Y-%m-%d %H:%M:%S UTC')
-        print(f"Open time: {readable_time} (epoch: {open_time_epoch})")
+        logger.info(f"Open time: {readable_time} (epoch: {open_time_epoch})")
     else:
-        print("Open time: Will fetch from Raydium API")
-    print("Scanning ±50 blocks around open time...\n")
+        logger.info("Open time: Will fetch from Raydium API")
+    logger.info("Scanning ±50 blocks around open time...\n")
     result = find_pool_creation_transaction(pool_address, open_time_epoch)
     if result:
         signature = result['transaction']['signatures'][0]
-        print(f"\n🎉 SUCCESS!")
-        print(f"Creation transaction: {signature}")
-        print(f"View on explorer: https://explorer.solana.com/tx/{signature}")
+        logger.info(f"\n🎉 SUCCESS!")
+        logger.info(f"Creation transaction: {signature}")
+        logger.info(f"View on explorer: https://explorer.solana.com/tx/{signature}")
     else:
-        print(f"\n❌ FAILED: Could not find pool creation transaction")
-        print(f"\n💡 Troubleshooting:")
-        print(f"   - Pool may have openTime = 0 (try manual timestamp)")
-        print(f"   - Pool may be too old (pre-2023 pools often lack openTime)")
-        print(f"   - Check pool address on explorer.solana.com for anchor data")
-        print(f"   - Use manual epoch timestamp if available")
+        logger.error(f"\n❌ FAILED: Could not find pool creation transaction")
+        logger.info(f"\n💡 Troubleshooting:")
+        logger.info(f"   - Pool may have openTime = 0 (try manual timestamp)")
+        logger.info(f"   - Pool may be too old (pre-2023 pools often lack openTime)")
+        logger.info(f"   - Check pool address on explorer.solana.com for anchor data")
+        logger.info(f"   - Use manual epoch timestamp if available")
 
 if __name__ == '__main__':
     main()

@@ -1,11 +1,11 @@
 import os
-from solana_multitool.auto_config.logging import logging_config
+from solana_multitool.auto_config.logging_config import logger
 from pathlib import Path
 import logging
 from typing import Optional
 from dotenv import load_dotenv, find_dotenv
 
-logger = logging_config.get_logger(__name__)
+
 
 def load_env_file() -> None:
     """

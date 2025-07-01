@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "solana-multitool"
+version = "0.1.0"
+description = "A toolkit for Solana DEX and pool analysis"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["requests>=2.28.0", "python-dotenv>=0.21.0"]
+
+[project.optional-dependencies]
+dev = ["pytest", "toml"]
+
+[project.scripts]
+solana-multitool = "solana_multitool.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pyright]
+extraPaths = ["src"]
