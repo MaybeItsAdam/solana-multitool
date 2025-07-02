@@ -119,7 +119,7 @@ class Config:
         return 'quiknode' in self.solana_rpc_url.lower()
 
     def get_provider_key(self) -> str:
-        """Get provider key for transaction metadata."""
+        """Get provider key for tx metadata."""
         if self.is_quicknode():
             return "quicknode"
         elif 'alchemy' in self.solana_rpc_url.lower():

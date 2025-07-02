@@ -2,9 +2,7 @@
 solana_rpc_utils.py
 
 General utility functions for interacting with the Solana RPC API, including
-making RPC requests with rate limiting and fetching transactions by program ID.
-
-This module is intended to be imported wherever Solana RPC utilities are needed.
+making RPC requests with rate limiting and fetching txs by program ID.
 """
 
 import requests
@@ -73,8 +71,8 @@ def get_block(slot, max_retries=7):
             "method": "getBlock",
             "params": [slot, {
                 "encoding": "json",
-                "maxSupportedTransactionVersion": 0,
-                "transactionDetails": "full",
+                "maxSupportedtxVersion": 0,
+                "txDetails": "full",
                 "rewards": False
             }]
         }
@@ -107,41 +105,41 @@ def get_block(slot, max_retries=7):
         logger.error(f"Failed to fetch block {slot} after {max_retries} retries.")
     return None
 
-def scan_blocks_for_transactions(start_slot, end_slot, tx_filter=lambda tx: True, max_workers=4):
+def scan_blocks_for_txs(start_slot, end_slot, tx_filter=lambda tx: True, max_workers=4):
     """
-    Scan blocks in the given slot interval and yield working transactions matching tx_filter.
-    Only transactions with meta.err == None are yielded.
+    Scan blocks in the given slot interval and yield working txs matching tx_filter.
+    Only txs with meta.err == None are yielded.
     """
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(get_block, slot): slot for slot in range(start_slot, end_slot + 1)}
         for future in as_completed(futures):
             block = future.result()
-            if block and 'transactions' in block:
-                for tx in block['transactions']:
-                    # Only yield transactions with no error (working transactions)
+            if block and 'txs' in block:
+                for tx in block['txs']:
+                    # Only yield txs with no error (working txs)
                     if tx.get('meta') and tx['meta'].get('err') is None and tx_filter(tx):
                         yield tx
 
-def get_solana_transactions_with_program_id_in_interval(program_id, start_slot, end_slot):
+def get_solana_txs_with_program_id_in_interval(program_id, start_slot, end_slot):
     def program_id_filter(tx):
-        return program_id in tx['transaction']['message']['accountKeys']
-    yield from scan_blocks_for_transactions(
+        return program_id in tx['tx']['message']['accountKeys']
+    yield from scan_blocks_for_txs(
         start_slot, end_slot, tx_filter=program_id_filter
     )
 
-def get_transaction_by_signature(signature):
+def get_tx_by_signature(signature):
     """
     Args:
-        signature (str): The transaction signature.
+        signature (str): The tx signature.
 
     Returns:
-        dict or None: The transaction data, or None if not found.
+        dict or None: The tx data, or None if not found.
     """
 
     payload = {
         "jsonrpc": "2.0",
         "id": 1,
-        "method": "getTransaction",
-        "params": [signature, {"encoding": "json", "maxSupportedTransactionVersion": 0}]
+        "method": "gettx",
+        "params": [signature, {"encoding": "json", "maxSupportedtxVersion": 0}]
     }
     return make_rpc_request(payload)

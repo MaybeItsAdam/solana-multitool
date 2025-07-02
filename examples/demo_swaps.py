@@ -15,8 +15,8 @@ swap_coindesk - incomplete
 
 TODO
     - port usage of swap_extractor more of this project to go because in usage cases:
-        - the transaction is fetched, the signature is extracted
-        - then the transaction is fetched again
+        - the tx is fetched, the signature is extracted
+        - then the tx is fetched again
     - any function that goes over an interval should dump swaps as found, so swap_coindesk should be redone
 
 '''

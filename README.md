@@ -2,6 +2,9 @@
 
 A non-complete toolkit for various things
 
+note for me
+  - for funcs that yield scan_blocks_for_transactions -> continue to yield? -> save at the very end?
+
 what works (mostly)
   - getting swaps by program id
   - parsing said swaps (done in go forked from [franco-bianco/solanaswap-go](https://github.com/franco-bianco/solanaswap-go))

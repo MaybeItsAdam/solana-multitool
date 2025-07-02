@@ -7,12 +7,12 @@ def get_swap_from_tx_signature(signature, log_error=False):
     logger.info(f"Getting formatted swap for signature {signature}")
 
     """
-    Extract swap data from a transaction signature using an external process.
-    Optionally logs error and/or working transactions using the transaction data fetched by signature.
+    Extract swap data from a tx signature using an external process.
+    Optionally logs error and/or working txs using the tx data fetched by signature.
 
     Args:
-        signature (str): The transaction signature to process.
-        log_error (bool): Whether to log error transactions.
+        signature (str): The tx signature to process.
+        log_error (bool): Whether to log error txs.
 
     Returns:
         dict or None: Parsed swap data if successful, otherwise None.

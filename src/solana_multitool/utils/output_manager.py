@@ -30,8 +30,8 @@ class OutputManager:
     def setup_directories(self):
         """Create all necessary output directories."""
         directories = [
-            "transactions/error_txs",
-            "transactions/working_txs",
+            "txs/error_txs",
+            "txs/working_txs",
             "pool_scans",
             "swap_data",
             "raw_data",
@@ -47,7 +47,7 @@ class OutputManager:
         Get the full path for an output file.
 
         Args:
-            category: Type of output (e.g., 'logs', 'pool_scans', 'transactions/error_txs')
+            category: Type of output (e.g., 'logs', 'pool_scans', 'txs/error_txs')
             filename: Optional filename to append
 
         Returns:
@@ -82,19 +82,19 @@ class OutputManager:
 
         return str(filepath)
 
-    def save_transaction_json(self, tx, signature, is_error=False):
+    def save_tx_json(self, tx, signature, is_error=False):
         """
-        Save transaction data to appropriate directory.
+        Save tx data to appropriate directory.
 
         Args:
-            tx: Transaction data
-            signature: Transaction signature
-            is_error: Whether this is an error transaction
+            tx: tx data
+            signature: tx signature
+            is_error: Whether this is an error tx
 
         Returns:
             String path to saved file
         """
-        category = "transactions/error_txs" if is_error else "transactions/working_txs"
+        category = "txs/error_txs" if is_error else "txs/working_txs"
         filename = f"{signature}.json"
 
         return self.save_json([tx], category, filename, indent=4)
@@ -135,7 +135,7 @@ class OutputManager:
 
     def save_raw_data(self, data, filename):
         """
-        Save raw data (blocks, transactions, etc.) for debugging.
+        Save raw data (blocks, txs, etc.) for debugging.
 
         Args:
             data: Raw data to save
@@ -171,21 +171,21 @@ class OutputManager:
 output_manager = OutputManager()
 
 # Convenience functions for easy importing
-def save_error_transaction_json(tx, signature):
-    """Save error transaction JSON."""
-    return output_manager.save_transaction_json(tx, signature, is_error=True)
+def save_error_tx_json(tx, signature):
+    """Save error tx JSON."""
+    return output_manager.save_tx_json(tx, signature, is_error=True)
 
 def save_text(data, filename):
     """Save data as plain text to the 'text' output directory."""
     return output_manager.save_text(data, filename)
 
-def save_working_transaction_json(tx, signature):
-    """Save working transaction JSON."""
-    return output_manager.save_transaction_json(tx, signature, is_error=False)
+def save_working_tx_json(tx, signature):
+    """Save working tx JSON."""
+    return output_manager.save_tx_json(tx, signature, is_error=False)
 
-def dump_transactions_to_json(transactions, filename):
-    """Dump transactions to JSON file."""
-    return output_manager.save_json(transactions, "transactions", filename, indent=4)
+def dump_txs_to_json(txs, filename):
+    """Dump txs to JSON file."""
+    return output_manager.save_json(txs, "txs", filename, indent=4)
 
 def save_swap(swap_data, identifier=None):
     """Convenience function to save swap data."""
