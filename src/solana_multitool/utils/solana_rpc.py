@@ -71,7 +71,7 @@ def get_block(slot, max_retries=7):
             "method": "getBlock",
             "params": [slot, {
                 "encoding": "json",
-                "maxSupportedtxVersion": 0,
+                "maxSupportedTransactionVersion": 0,
                 "txDetails": "full",
                 "rewards": False
             }]
@@ -81,14 +81,14 @@ def get_block(slot, max_retries=7):
             response.raise_for_status()
             data = response.json()
             if 'result' in data and data['result']:
+                logger.info(f"got block {slot}")
                 return data['result']
             elif 'result' in data and data['result'] is None:
                 if logger:
                     logger.info(f"Block {slot} not found. Skipping.")
                 return None
             else:
-                if logger:
-                    logger.warning(f"Unexpected response for block {slot}: {data}")
+                logger.warning(f"Unexpected response for block {slot}: {data}")
                 return None
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 429:
@@ -110,19 +110,23 @@ def scan_blocks_for_txs(start_slot, end_slot, tx_filter=lambda tx: True, max_wor
     Scan blocks in the given slot interval and yield working txs matching tx_filter.
     Only txs with meta.err == None are yielded.
     """
+    if logger:
+        logger.info(f"Scanning blocks from slot {start_slot} to {end_slot}")
+
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(get_block, slot): slot for slot in range(start_slot, end_slot + 1)}
         for future in as_completed(futures):
             block = future.result()
-            if block and 'txs' in block:
-                for tx in block['txs']:
-                    # Only yield txs with no error (working txs)
+            if block and 'transactions' in block:
+                for tx in block['transactions']:
                     if tx.get('meta') and tx['meta'].get('err') is None and tx_filter(tx):
+                        logger.info("found a matching tx")
                         yield tx
 
 def get_solana_txs_with_program_id_in_interval(program_id, start_slot, end_slot):
     def program_id_filter(tx):
-        return program_id in tx['tx']['message']['accountKeys']
+        return program_id in tx['transaction']['message']['accountKeys']
     yield from scan_blocks_for_txs(
         start_slot, end_slot, tx_filter=program_id_filter
     )

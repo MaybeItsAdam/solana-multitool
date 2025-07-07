@@ -1,9 +1,9 @@
 import os
+import logging
 from solana_multitool.auto_config.logging_config import logger
 from pathlib import Path
-import logging
 from typing import Optional
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 
 
 
@@ -25,7 +25,7 @@ def load_env_file() -> None:
     env_path = project_root / "config" / ".env"
 
     if not env_path or not Path(env_path).exists():
-        print("No .env file found to load.")
+        logger.warning("No .env file found to load.")
 
     try:
         was_loaded = load_dotenv(dotenv_path=env_path, override=True)

@@ -1,10 +1,9 @@
 import os
 import json
 import shutil
-from datetime import datetime
 from pathlib import Path
+from time import time
 
-# Root output directory - relative to project root
 OUTPUT_ROOT = Path(__file__).resolve().parent.parent.parent.parent / "data"
 
 class OutputManager:
@@ -16,7 +15,6 @@ class OutputManager:
         wipe = os.environ.get("WIPE_OUTPUT_ON_START", "False").lower() == "true"
         if wipe:
             self.wipe_output()
-        self.setup_directories()
 
     def wipe_output(self):
         """Delete all files and folders in the output root directory."""
@@ -27,173 +25,53 @@ class OutputManager:
                 else:
                     item.unlink()
 
-    def setup_directories(self):
-        """Create all necessary output directories."""
-        directories = [
-            "txs/error_txs",
-            "txs/working_txs",
-            "pool_scans",
-            "swap_data",
-            "raw_data",
-            "text"
-        ]
-
-        for dir_path in directories:
-            full_path = self.output_root / dir_path
-            full_path.mkdir(parents=True, exist_ok=True)
-
-    def get_output_path(self, category, filename=None):
+    def save_output(self, data, subpath, name=None, as_text=False):
         """
-        Get the full path for an output file.
-
-        Args:
-            category: Type of output (e.g., 'logs', 'pool_scans', 'txs/error_txs')
-            filename: Optional filename to append
-
-        Returns:
-            Path object for the output location
+        Save data to output_root/subpath/name, auto-generating name if not set.
+        If as_text is True or name ends with .txt, saves as plain text, else as JSON.
+        Returns the full path to the saved file.
         """
-        base_path = self.output_root / category
+        # Ensure subpath exists
+        full_dir = self.output_root / subpath
+        full_dir.mkdir(parents=True, exist_ok=True)
 
-        if filename:
-            return base_path / filename
-        return base_path
+        # Determine default name if not provided
+        if name is None:
+            ts = int(time())
+            sig = None
+            if isinstance(data, dict):
+                if "transaction" in data and "signatures" in data["transaction"]:
+                    sig = data["transaction"]["signatures"][0]
+                elif "signatures" in data:
+                    sig = data["signatures"][0]
+                elif "signature" in data:
+                    sig = data["signature"]
+            if as_text or (isinstance(data, str) and not name):
+                name = f"output_{ts}.txt"
+            elif sig:
+                name = f"{sig}_{ts}.json"
+            else:
+                name = f"output_{ts}.json"
 
-    def save_json(self, data, category, filename, indent=2):
-        """
-        Save data as JSON to the appropriate output directory.
-
-        Args:
-            data: Data to save
-            category: Output category (e.g., 'pool_scans', 'swap_data')
-            filename: Filename (will add .json if not present)
-            indent: JSON indentation level
-
-        Returns:
-            String path to saved file
-        """
-        if not filename.endswith('.json'):
-            filename += '.json'
-
-        filepath = self.get_output_path(category, filename)
-
-        with open(filepath, 'w') as f:
-            json.dump(data, f, indent=indent)
-
-        return str(filepath)
-
-    def save_tx_json(self, tx, signature, is_error=False):
-        """
-        Save tx data to appropriate directory.
-
-        Args:
-            tx: tx data
-            signature: tx signature
-            is_error: Whether this is an error tx
-
-        Returns:
-            String path to saved file
-        """
-        category = "txs/error_txs" if is_error else "txs/working_txs"
-        filename = f"{signature}.json"
-
-        return self.save_json([tx], category, filename, indent=4)
-
-    def save_pool_creation_scan(self, pool_address, result_data):
-        """
-        Save pool creation scan results.
-
-        Args:
-            pool_address: Pool address being scanned
-            result_data: Scan results
-
-        Returns:
-            String path to saved file
-        """
-        filename = f"pool_creation_scan_{pool_address}.json"
-
-        return self.save_json(result_data, "pool_scans", filename)
-
-    def save_swap_data(self, swap_data, identifier=None):
-        """
-        Save swap analysis data.
-
-        Args:
-            swap_data: Swap data to save
-            identifier: Optional identifier for the filename
-
-        Returns:
-            String path to saved file
-        """
-
-        if identifier:
-            filename = f"swaps_{identifier}.json"
+        # Determine file type
+        if as_text or name.endswith('.txt'):
+            mode = "w"
+            path = full_dir / name
+            with open(path, mode) as f:
+                f.write(data if isinstance(data, str) else str(data))
+            return str(path)
         else:
-            filename = f"swaps.json"
+            if not name.endswith('.json'):
+                name += '.json'
+            path = full_dir / name
+            with open(path, "w") as f:
+                json.dump(data, f, indent=4)
+            return str(path)
 
-        return self.save_json(swap_data, "swap_data", filename)
-
-    def save_raw_data(self, data, filename):
-        """
-        Save raw data (blocks, txs, etc.) for debugging.
-
-        Args:
-            data: Raw data to save
-            filename: Filename for the data
-
-        Returns:
-            String path to saved file
-        """
-        return self.save_json(data, "raw_data", filename)
-
-    def save_text(self, data, filename):
-        """
-        Save data as plain text to the 'text' output directory.
-
-        Args:
-            data: String or text to save
-            filename: Filename (will add .txt if not present)
-
-        Returns:
-            String path to saved file
-        """
-        if not filename.endswith('.txt'):
-            filename += '.txt'
-
-        filepath = self.get_output_path("text", filename)
-
-        with open(filepath, 'w') as f:
-            f.write(data)
-
-        return str(filepath)
-
-# Global instance for easy access
 output_manager = OutputManager()
 
-# Convenience functions for easy importing
-def save_error_tx_json(tx, signature):
-    """Save error tx JSON."""
-    return output_manager.save_tx_json(tx, signature, is_error=True)
-
-def save_text(data, filename):
-    """Save data as plain text to the 'text' output directory."""
-    return output_manager.save_text(data, filename)
-
-def save_working_tx_json(tx, signature):
-    """Save working tx JSON."""
-    return output_manager.save_tx_json(tx, signature, is_error=False)
-
-def dump_txs_to_json(txs, filename):
-    """Dump txs to JSON file."""
-    return output_manager.save_json(txs, "txs", filename, indent=4)
-
-def save_swap(swap_data, identifier=None):
-    """Convenience function to save swap data."""
-    return output_manager.save_swap_data(swap_data, identifier)
-
-def get_output_path(category, filename=None):
-    """Get output path for a category and optional filename."""
-    return str(output_manager.get_output_path(category, filename))
-
-# Initialize directories on import
-output_manager.setup_directories()
+def save_output(data, subpath, name=None, as_text=False):
+    """
+    Convenience function to save data using the global output_manager.
+    """
+    return output_manager.save_output(data, subpath, name=name, as_text=as_text)

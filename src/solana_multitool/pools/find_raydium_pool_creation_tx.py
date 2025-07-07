@@ -14,7 +14,21 @@ from solana_multitool.auto_config.logging_config import logger
 from solana_multitool.utils.solana_rpc import make_rpc_request
 from solana_multitool.utils.solana_rpc import scan_blocks_for_txs
 
-def get_pool_open_time_from_raydium_api(pool_address):
+def find_raydium_pool_creation_tx(pool_address, open_time_epoch=None):
+    logger.info(f"=== FINDING POOL CREATION tx ===")
+    logger.info(f"Pool Address: {pool_address}")
+    if open_time_epoch:
+        open_timestamp = int(open_time_epoch)
+    else:
+        open_timestamp = _get_pool_open_time_from_raydium_api(pool_address)
+        if not open_timestamp:
+            logger.error("Could not get pool open time - see messages above for troubleshooting")
+    target_slot = _timestamp_to_slot(open_timestamp)
+    if not target_slot:
+        logger.error("Could not convert timestamp to slot")
+    yield from _find_block_candidates_for_pool_creation_given_slot(pool_address, target_slot, block_range=50)
+
+def _get_pool_open_time_from_raydium_api(pool_address):
     try:
         url = f"https://api-v3.raydium.io/pools/info/ids"
         params = {"ids": pool_address}
@@ -32,44 +46,26 @@ def get_pool_open_time_from_raydium_api(pool_address):
         logger.error(f"Failed to get pool open time from API: {e}")
         return None
 
-
-def find_block_candidates_for_pool_creation_given_slot(pool_address, center_slot, block_range=50):
+def _find_block_candidates_for_pool_creation_given_slot(pool_address, center_slot, block_range=50):
     logger.info(f"Scanning slots {center_slot - block_range} to {center_slot + block_range} for pool {pool_address}")
     start_slot = max(1, center_slot - block_range)
     end_slot = center_slot + block_range
 
     def pool_address_filter(tx):
         account_keys = tx['transaction']['message']['accountKeys']
-        # Handles both dict and string accountKeys
-        if isinstance(account_keys[0], dict):
-            return any(acc.get("pubkey") == pool_address for acc in account_keys)
-        return pool_address in account_keys
+        filtered_keys = []
+        for acc in account_keys:
+            if isinstance(acc, dict):
+                pubkey = acc.get("pubkey")
+                if pubkey:
+                    filtered_keys.append(pubkey)
+            elif isinstance(acc, str):
+                filtered_keys.append(acc)
+        return pool_address in filtered_keys
 
-    txs = list(scan_blocks_for_txs(start_slot, end_slot, tx_filter=pool_address_filter))
-    txs.sort(key=lambda tx: tx.get('slot', 0))
-    return txs
+    yield from scan_blocks_for_txs(start_slot, end_slot, tx_filter=pool_address_filter)
 
-def find_raydium_pool_creation_tx(pool_address, open_time_epoch=None):
-    logger.info(f"=== FINDING POOL CREATION tx ===")
-    logger.info(f"Pool Address: {pool_address}")
-    if open_time_epoch:
-        open_timestamp = int(open_time_epoch)
-    else:
-        open_timestamp = get_pool_open_time_from_raydium_api(pool_address)
-        if not open_timestamp:
-            logger.error("Could not get pool open time - see messages above for troubleshooting")
-            return None
-    target_slot = timestamp_to_slot(open_timestamp)
-    if not target_slot:
-        logger.error("Could not convert timestamp to slot")
-        return None
-    txs = find_block_candidates_for_pool_creation_given_slot(pool_address, target_slot, block_range=50)
-    if not txs:
-        logger.warning("No txs found in the scanned range")
-        return None
-    return txs[0]
-
-def timestamp_to_slot(target_timestamp):
+def _timestamp_to_slot(target_timestamp):
     """
     Convert a Unix timestamp to the closest Solana slot using binary search.
 

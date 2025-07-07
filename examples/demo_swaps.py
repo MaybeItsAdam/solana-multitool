@@ -23,7 +23,7 @@ TODO
 
 from solana_multitool.swaps.swap_coindesk import *
 from solana_multitool.swaps.swap_extractor import *
-from solana_multitool.utils.output_manager import save_swap
+from solana_multitool.utils.output_manager import save_output
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from solana_multitool.auto_config.logging_config import logger
 
@@ -32,16 +32,14 @@ def demo_coindesk():
     start_block = 324551590
     end_block = 324551980
 
-    swaps = get_coindesk_formatted_swaps_in_interval_given_instrument(instrument, start_block, end_block)
+    for i, swap in enumerate(get_coindesk_formatted_swaps_in_interval_given_instrument(instrument, start_block, end_block)):
+        save_output(swap, "swaps/coindesk_formatted", f"{i}.json")
 
-    if swaps:
-        output_file = save_swap(swaps, "test_coindesk_formatted_swaps_interval")
-        print(f"Swap data saved to: {output_file}")
 
 def demo_extractor():
     signature = "4P6jLPkh8Gm48excTDmnBAhvtbV6WqYwrucc4LYHwBTzoFkGAhsTdxTxvLfrJqnvWRBZ3FELuZPRWhBMHqBq7pnA"
     swap = get_swap_from_tx_signature(signature)
-    save_swap(swap, "test_extracted_swap")
+    save_output(swap, "swaps", "subroutine_extracted_swap.json")
 
 
 if __name__ == "__main__":
@@ -51,6 +49,6 @@ if __name__ == "__main__":
             TextColumn("[progress.description]{task.description}"),
             TimeElapsedColumn(),
         ) as progress:
-        task_id = progress.add_task(description="[blue]Running Swap tests...", total=None)
+        task_id = progress.add_task(description="[blue]Running Swap examples...", total=None)
         demo_coindesk();
         demo_extractor();

@@ -24,20 +24,18 @@ def setup_logging(
         'disable_existing_loggers': False,
         'formatters': {
             'file_formatter': {
-                'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                'format': '%(asctime)s - %(levelname)s - %(message)s',
             },
             'console_formatter': {
                 'format': '%(message)s',
             },
         },
         'handlers': {
-            # This handler uses Rich and will not break spinners
             'console': {
                 'class': 'rich.logging.RichHandler',
                 'level': console_log_level.upper(),
                 'formatter': 'console_formatter',
             },
-            # This handler writes all logs to a file
             'file': {
                 'class': 'logging.handlers.RotatingFileHandler',
                 'level': file_log_level.upper(),
@@ -49,7 +47,7 @@ def setup_logging(
             },
         },
         'root': {
-            'level': 'DEBUG', # Let all messages pass to handlers
+            'level': 'DEBUG',
             'handlers': ['console', 'file'],
         },
     }

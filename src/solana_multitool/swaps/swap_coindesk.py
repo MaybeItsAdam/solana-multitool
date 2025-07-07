@@ -25,8 +25,8 @@ def format_goswap_and_tx_to_coindesk(swap: dict, tx: dict) -> dict:
         "TYPE": None,
         "MARKET": None,
         "CHAIN_ASSET": None,
-        "INSTRUMENT": swap["tx_data"][1]["Data"]["info"]["authority"],
-        "MAPPED_INSTRUMENT": swap["tx_data"][1]["Data"]["info"]["authority"],
+        "INSTRUMENT": swap["transaction_data"][1]["Data"]["info"]["authority"],
+        "MAPPED_INSTRUMENT": swap["transaction_data"][1]["Data"]["info"]["authority"],
         "BASE": address_to_TLA(swap["swap_data"]["TokenInMint"]),
         "QUOTE": address_to_TLA(swap["swap_data"]["TokenOutMint"]),
         "SIDE": None,  # BUY OR SELL
@@ -42,58 +42,47 @@ def format_goswap_and_tx_to_coindesk(swap: dict, tx: dict) -> dict:
         "CCSEQ": None,
         "tx_HASH": None,
         "BLOCK_NUMBER": None,
-        "FROM": swap["tx_data"][0]["Data"]["info"]["authority"],
+        "FROM": swap["transaction_data"][0]["Data"]["info"]["authority"],
         "MARKET_FEE_PERCENTAGE": None,
         "MARKET_FEE_VALUE": str(tx["meta"]["fee"]),
         "PROVIDER_KEY": get_provider_key(),
-        "SIGNATURE_TEMP": tx['tx']['signatures'][0]
+        "SIGNATURE_TEMP": tx['transaction']['signatures'][0]
     }
     return formatted
 
-# could rewrite this to pass functions into the functions to perform actions
-# as opposed to wasting time collecting then iterating again
 def get_coindesk_formatted_swaps_in_interval_given_instrument(
     instrument: str,
     start_block: int,
     end_block: int
 ):
     logger.info(f"Streaming and processing swaps in interval {start_block} - {end_block}")
-    results_with_order = {}
-    futures_map = {}
-
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         tx_generator = get_solana_txs_with_program_id_in_interval(instrument, start_block, end_block)
+        futures_map = {}
 
-        # --- Submit tasks from the generator ---
-        for idx, tx in enumerate(tx_generator):
-
+        for tx in tx_generator:
             status = tx['meta']['status']
-            signature = tx['tx']['signatures'][0]
+            signature = tx['transaction']['signatures'][0]
 
             if status is not None and "Err" in status:
-                results_with_order[idx] = {"signature": signature, "status": status}
+                yield {"signature": signature, "status": status}
             elif not tx["meta"].get("innerInstructions"):
-                results_with_order[idx] = {"signature": signature, "status": "no inner instructions"}
+                yield {"signature": signature, "status": "no inner instructions"}
             else:
                 future = executor.submit(get_swap_from_tx_signature, signature)
-                futures_map[future] = (idx, tx)
+                futures_map[future] = tx
 
         for future in as_completed(futures_map):
-
-            original_idx, original_tx = futures_map[future]
+            original_tx = futures_map[future]
             try:
                 swap_data = future.result()
                 if swap_data is not None:
                     coindesk_swap = format_goswap_and_tx_to_coindesk(swap_data, original_tx)
-                    results_with_order[original_idx] = coindesk_swap
+                    yield coindesk_swap
             except Exception as e:
-                logger.error(f"Error processing swap for signature {original_tx['tx']['signatures'][0]}: {e}")
-                results_with_order[original_idx] = {
-                    "signature": original_tx['tx']['signatures'][0],
+                logger.error(f"Error processing swap for signature {original_tx['transaction']['signatures'][0]}: {e}")
+                yield {
+                    "signature": original_tx['transaction']['signatures'][0],
                     "status": f"Processing Error: {str(e)}"
                 }
-
-
-    formatted_swaps = [results_with_order[idx] for idx in sorted(results_with_order.keys())]
-    return formatted_swaps

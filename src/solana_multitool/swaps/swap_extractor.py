@@ -3,7 +3,7 @@ from solana_multitool.auto_config.logging_config import logger
 import json
 import subprocess
 
-def get_swap_from_tx_signature(signature, log_error=False):
+def get_swap_from_tx_signature(signature):
     logger.info(f"Getting formatted swap for signature {signature}")
 
     """

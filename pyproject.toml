@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "solana-multitool"
-version = "0.1.0"
+name = "solana_multitool"
+version = "0.2.0"
 description = "A toolkit for Solana DEX and pool analysis"
 readme = "README.md"
 requires-python = ">=3.9"
